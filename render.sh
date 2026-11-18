@@ -1,0 +1,17 @@
+#!/bin/sh
+# Render page.html to entry.png at exactly 1024x1024 with headless Chromium.
+# Requires the Playwright-bundled Chromium (or any chromium with --headless).
+set -e
+cd "$(dirname "$0")"
+CHROME="${CHROME:-$HOME/.cache/ms-playwright/chromium-1148/chrome-linux/chrome}"
+# NOTE: headless Chrome's viewport is ~87px shorter than the window, so a
+# 1024px-tall viewport needs --window-size height 1111.
+"$CHROME" --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
+  --force-device-scale-factor=1 --window-size=1024,1111 \
+  --virtual-time-budget=5000 \
+  --screenshot="$PWD/.entry-full.png" "file://$PWD/page.html"
+# The capture is 1024x1111 (see above); the page itself is exactly 1024
+# tall, so crop the blank strip at the bottom to meet the 1024x1024 gate.
+python3 -c "from PIL import Image; im=Image.open('.entry-full.png'); im.crop((0,0,1024,1024)).save('entry.png'); print(im.size, '->', Image.open('entry.png').size)"
+rm -f .entry-full.png
+ls -l entry.png
